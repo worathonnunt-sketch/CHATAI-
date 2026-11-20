@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
+import { sfx } from './sound.js'
 
 // ตอนพัฒนา (npm run dev) ปล่อยว่างไว้ ใช้ proxy ใน vite.config.js | ตอนขึ้น Vercel ตั้ง VITE_API_URL เป็น URL ของ backend
 const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
@@ -13,6 +14,7 @@ function CodeBlock({ children }) {
     try {
       await navigator.clipboard.writeText(code)
       setCopied(true)
+      sfx.play('coin')
       setTimeout(() => setCopied(false), 1500)
     } catch {
       // clipboard ใช้ไม่ได้ ไม่ต้องทำอะไร
@@ -21,7 +23,7 @@ function CodeBlock({ children }) {
 
   return (
     <div className="code-block">
-      <button type="button" className="copy-btn" onClick={copy}>
+      <button type="button" className="copy-btn" data-sfx="none" onClick={copy}>
         {copied ? 'คัดลอกแล้ว' : 'Copy'}
       </button>
       <pre>{children}</pre>
@@ -36,10 +38,18 @@ export function useChat() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
+  // AI กำลังคิด: มีเสียงบี๊บเบา ๆ เป็นจังหวะระหว่างรอ
+  useEffect(() => {
+    if (!loading) return
+    const t = setInterval(() => sfx.play('think'), 520)
+    return () => clearInterval(t)
+  }, [loading])
+
   // ส่งข้อความหนึ่งข้อความ (ใช้ทั้งจากช่องพิมพ์และปุ่มลัด)
   async function ask(raw) {
     const text = raw.trim()
     if (!text || loading) return
+    sfx.play('send')
     const history = messages
     setMessages([...history, { role: 'user', text }])
     setInput('')
@@ -55,7 +65,9 @@ export function useChat() {
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
       setMessages((prev) => [...prev, { role: 'assistant', text: data.reply }])
+      sfx.play('receive')
     } catch (err) {
+      sfx.play('error')
       if (err.name === 'TimeoutError') setError('AI ตอบช้าเกินไป ลองใหม่อีกครั้ง')
       else if (err instanceof TypeError) setError('เชื่อมต่อ backend ไม่ได้ — backend รันอยู่หรือยัง? (ตั้ง VITE_API_URL ถูกหรือเปล่า)')
       else setError(err.message)
@@ -70,6 +82,7 @@ export function useChat() {
   }
 
   function clear() {
+    sfx.play('delete')
     setMessages([])
     setError(null)
   }
@@ -94,7 +107,7 @@ export function ChatInput({ chat }) {
       <div className="quick" role="group" aria-label="คำถามลัด">
         <span className="quick-label">ถามเร็ว</span>
         {QUICK.map((q) => (
-          <button type="button" key={q.label} className="quick-btn" disabled={chat.loading} onClick={() => chat.ask(q.text)}>
+          <button type="button" key={q.label} className="quick-btn" data-sfx="none" disabled={chat.loading} onClick={() => chat.ask(q.text)}>
             {q.label}
           </button>
         ))}
@@ -107,7 +120,7 @@ export function ChatInput({ chat }) {
           placeholder="พิมพ์ข้อความถึง AI..."
           aria-label="พิมพ์ข้อความ"
         />
-        <button type="submit" disabled={!chat.input.trim() || chat.loading}>ส่ง</button>
+        <button type="submit" data-sfx="none" disabled={!chat.input.trim() || chat.loading}>ส่ง</button>
       </form>
     </div>
   )
@@ -124,7 +137,7 @@ export function ChatHistory({ chat }) {
     <aside className="hist" aria-label="ประวัติสนทนา">
       <div className="hist-head">
         <b>ประวัติสนทนา</b>
-        <button type="button" onClick={chat.clear} disabled={!chat.messages.length}>ล้าง</button>
+        <button type="button" data-sfx="none" onClick={chat.clear} disabled={!chat.messages.length}>ล้าง</button>
       </div>
       <div className="hist-log">
         {!chat.messages.length && !chat.loading && <p className="hist-empty">ยังไม่มีบทสนทนา ลองพิมพ์ถาม หรือกดปุ่มลัดเหนือช่องพิมพ์ได้เลย</p>}
