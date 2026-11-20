@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CREW, PINE, LAMP, BALL, HOUSE } from './pixelData.js'
+import { sfx } from './sound.js'
 
 // แปลงตาราง pixel เป็น <path> (รวมพิกเซลสีเดียวกันในแถวเดียวกัน)
 function toPaths(rows, pal) {
@@ -59,15 +60,29 @@ function Dialog({ m, onClose }) {
     return () => clearInterval(t)
   }, [text])
 
+  // เสียงกล่องข้อความ: เปิดกล่อง + บี๊บทุก 2 ตัวอักษรที่พิมพ์
+  useEffect(() => sfx.play('dialog'), [])
+  useEffect(() => {
+    if (n > 0 && n <= text.length && n % 2 === 1 && text[n - 1].trim()) sfx.play('talk')
+  }, [n, text])
+
   const next = () => {
     if (!done) setN(text.length)
-    else if (p < pages.length - 1) setP(p + 1)
-    else onClose()
+    else if (p < pages.length - 1) {
+      sfx.play('confirm')
+      setP(p + 1)
+    } else {
+      sfx.play('cancel')
+      onClose()
+    }
   }
 
   useEffect(() => {
     const key = (e) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {
+        sfx.play('cancel')
+        onClose()
+      }
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault()
         next()
@@ -210,10 +225,14 @@ export default function PixelCrew({ members, bubbles }) {
           type="button"
           key={i}
           className="px-char"
+          data-sfx="none"
           data-mv="idle"
           data-face="r"
           ref={(n) => (nodes.current[i] = n)}
-          onClick={() => i > 1 && setTalk(i)}
+          onClick={() => {
+            sfx.play('cry', i)
+            if (i > 1) setTalk(i)
+          }}
           aria-label={i === 0 ? 'ตัวละคร YOU' : i === 1 ? 'ตัวละคร AI' : `คุยกับ ${members[i].name}`}
         >
           <span className="px-emote">
