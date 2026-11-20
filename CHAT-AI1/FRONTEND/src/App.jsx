@@ -3,6 +3,8 @@ import { useChat, ChatInput, ChatHistory } from './ChatBox.jsx'
 import './App.css'
 import './pokemon.css'
 import PixelCrew, { Pix } from './PixelCrew.jsx'
+import SoundControl from './SoundControl.jsx'
+import { sfx } from './sound.js'
 import { BALL, CREW, PINE, LAMP, HOUSE } from './pixelData.js'
 import { TEAM, MEMBERS } from './teamData.js'
 
@@ -187,6 +189,7 @@ function Intro({ onDone }) {
   function enter() {
     if (go.current) return
     go.current = true
+    sfx.play('enter')
     setLeave(true)
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     setTimeout(onDone, reduce ? 400 : 1800)
@@ -205,7 +208,7 @@ function Intro({ onDone }) {
 
   return (
     <>
-      <div className={`gate ${leave ? 'leave' : ''}`} onClick={enter} role="button" tabIndex={0} aria-label={`เข้าสู่เว็บไซต์ ${TEAM.name}`}>
+      <div className={`gate ${leave ? 'leave' : ''}`} onClick={enter} role="button" data-sfx="none" tabIndex={0} aria-label={`เข้าสู่เว็บไซต์ ${TEAM.name}`}>
         <div className="gate-sun" aria-hidden="true" />
         {CLOUDS.map((c, i) => (
           <i
@@ -330,6 +333,7 @@ function Desktop({ onDone }) {
   // คลิกไอคอน: เลือกไอคอน, ถ้าเป็น CHATAI และคลิกซ้ำภายใน 0.6 วินาที (ดับเบิลคลิก/แตะสองครั้ง) → เปิดเกม
   function pick(icon) {
     setSel(icon.id)
+    sfx.play('select')
     if (!icon.game) return
     const now = Date.now()
     if (now - lastTap.current < 600) launch()
@@ -340,11 +344,19 @@ function Desktop({ onDone }) {
     if (phase !== 'loading') return
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     let p = 0
+    let prevFilled = 0
     let done
+    sfx.play('launch')
     const t = setInterval(() => {
       p = Math.min(100, p + (reduce ? 20 : p < 70 ? 3 + Math.random() * 5 : 1 + Math.random() * 3))
       setPct(p)
+      const f = Math.floor(p / (100 / BLOCKS))
+      if (f > prevFilled) {
+        prevFilled = f
+        sfx.play('load', f / BLOCKS)
+      }
       if (p >= 100) {
+        sfx.play('loaded')
         clearInterval(t)
         done = setTimeout(() => setPhase('closing'), 400)
       }
@@ -371,6 +383,7 @@ function Desktop({ onDone }) {
           <button
             type="button"
             key={ic.id}
+            data-sfx="none"
             className={`dt-icon ${sel === ic.id ? 'sel' : ''}`}
             autoFocus={ic.game}
             aria-label={ic.game ? 'CHATAI — ดับเบิลคลิกหรือกด Enter เพื่อเปิดเกม' : ic.label}
@@ -446,6 +459,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <SoundControl stage={stage} />
       {stage === 'desktop' && <Desktop onDone={toGate} />}
       {stage === 'gate' && <Intro onDone={toGame} />}
       <nav className="nav">
