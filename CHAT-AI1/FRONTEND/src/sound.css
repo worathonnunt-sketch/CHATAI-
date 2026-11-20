@@ -1,0 +1,12 @@
+/* ปุ่มเปิด/ปิดเสียง — โทนจอ Game Boy */
+.snd { position: fixed; right: 14px; bottom: 14px; z-index: 800; display: flex; gap: 6px; }
+.snd.on-desktop { bottom: 56px; }
+.snd button {
+  font: 8px/1 var(--px, 'Press Start 2P', monospace); padding: 8px 9px; cursor: pointer;
+  color: #8bac0f; background: #306230; border: 3px solid #0f380f; box-shadow: 3px 3px 0 #0f380f; opacity: 0.75;
+  text-decoration: line-through;
+}
+.snd button.on { color: #0f380f; background: #9bbc0f; opacity: 1; text-decoration: none; }
+.snd button:active { translate: 2px 2px; box-shadow: 1px 1px 0 #0f380f; }
+.snd button:focus-visible { outline: 3px solid #ffd23f; outline-offset: 2px; }
+@media (max-width: 600px) { .snd { right: 8px; bottom: 8px; } .snd button { font-size: 7px; padding: 7px; } }
