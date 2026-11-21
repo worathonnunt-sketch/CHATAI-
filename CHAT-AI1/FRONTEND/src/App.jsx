@@ -498,7 +498,7 @@ export default function App() {
           <div className="cards">
             {MEMBERS.map((m, i) => (
               <article className="card" key={m.email}>
-                <span className="no">No.{String(i + 1).padStart(3, '0')}</span>
+                <span className="no">No.{String(i + 1).padStart(3, '1')}</span>
                 <img className="photo" src={m.photo} alt={m.name} />
                 <h3>{m.name}</h3>
                 <p className="role">{m.role}</p>
